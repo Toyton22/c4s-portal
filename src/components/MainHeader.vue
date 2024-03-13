@@ -13,16 +13,21 @@
         </label>
       </div>
       <div v-else class="w-auto py-3 ms-auto my-auto text-end">
-        <span class="text-light hover pointer mx-3" v-for="page in pages" :key="page.path" v-on:click="go(page.path)">
+        <router-link class="text-light hover pointer mx-3 text-decoration-none" v-for="page in pages" :key="page.path" :to="page.path">
           {{ page.title }}
-        </span>
+        </router-link>
       </div>
     </div>
   </div>
   <input type="checkbox" id="menuBtn" />
   <!-- スマホ用メニュー -->
   <div class="menu mw-xl mx-auto">
-    <div v-for="page in pages" :key="page.path" class="menu_content"><h4 class="menu_text pointer hover" @click="go(page.path)">{{ page.title }}</h4></div>
+    <div v-for="page in pages" :key="page.path" class="menu_content">
+      <router-link class="menu_text pointer hover h4 text-decoration-none" :to="page.path">{{ page.title }}</router-link>
+    </div>
+    <div v-for="page in pages_admin" :key="page.path" class="menu_content">
+      <router-link class="menu_text pointer hover h4 text-decoration-none" :to="page.path">{{ page.title }}</router-link>
+    </div>
   </div>
 
   <h2 class="mt-5">{{ pagename }}</h2>
@@ -32,26 +37,34 @@
 export default {
   name: "MainHeader",
   data() { return {
+    // main.jsとは異なり公開しているページのみ表示
     pages: [
       {
         title: "トップ",
-        path: "/"
-      },
+        path: "/",
+        condition: "public"
+      }
+    ],
+    pages_admin: [
       {
         title: "イベント",
-        path: "/events"
+        path: "/events",
+        condition: "public"
       },
       {
         title: "記事",
-        path: "/members"
+        path: "/members",
+        condition: "public"
       },
       {
         title: "備品一覧",
-        path: "/equips"
+        path: "/equips",
+        condition: "public"
       },
       {
         title: "マイページ",
-        path: "/mypage"
+        path: "/mypage",
+        condition: "public"
       }
     ]
   }},

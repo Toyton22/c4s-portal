@@ -1,26 +1,25 @@
+// このページってもしかして読み込まれない？
+
 <template>
-  <MainHeader />
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <TopPage />
+  <nav>
+    <router-link to="/">Home</router-link> |
+    <router-link to="/about">About</router-link>
+  </nav>
+  <router-view/>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
-import MainHeader from './components/MainHeader.vue'
+import TopPage from "@/pages/index.vue"
 
 export default {
-  name: 'App',
+  name: "IndexPage",
   components: {
-    HelloWorld,
-    MainHeader
-  },
-  computed: {
-    responsive() {
-      return (window.innerWidth < 750)
-    }
+    TopPage
   }
 }
 </script>
+
 
 <style>
 #app {
