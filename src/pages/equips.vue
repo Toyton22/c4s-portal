@@ -1,10 +1,10 @@
 <template>
-  <h1>Hello, TopPage.vue!</h1>
+  <h1>Hello, EquipPage.vue!</h1>
 </template>
 
 <script>
 export default {
-  name: "TopPage"
+  name: "EquipPage"
 }
 </script>
 

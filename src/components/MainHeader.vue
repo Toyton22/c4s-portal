@@ -16,6 +16,9 @@
         <router-link class="text-light hover pointer mx-3 text-decoration-none" v-for="page in pages" :key="page.path" :to="page.path">
           {{ page.title }}
         </router-link>
+        <router-link class="text-info hover pointer mx-3 text-decoration-none" v-for="page in pages_admin" :key="page.path" :to="page.path">
+          {{ page.title }}
+        </router-link>
       </div>
     </div>
   </div>
@@ -23,10 +26,14 @@
   <!-- スマホ用メニュー -->
   <div class="menu mw-xl mx-auto">
     <div v-for="page in pages" :key="page.path" class="menu_content">
-      <router-link class="menu_text pointer hover h4 text-decoration-none" :to="page.path">{{ page.title }}</router-link>
+      <router-link class="menu_text pointer hover h4 text-decoration-none" :to="page.path" @click="handleMenu(false)">
+        {{ page.title }}
+      </router-link>
     </div>
     <div v-for="page in pages_admin" :key="page.path" class="menu_content">
-      <router-link class="menu_text pointer hover h4 text-decoration-none" :to="page.path">{{ page.title }}</router-link>
+      <router-link class="menu_text pointer hover h4 text-decoration-none" :to="page.path" @click="handleMenu(false)">
+        {{ page.title }}
+      </router-link>
     </div>
   </div>
 
@@ -72,7 +79,8 @@ export default {
     
   },
   methods: {
-    go(path) { location.href = path }
+    go(path) { location.href = path },
+    handleMenu(bool) { document.getElementById("menuBtn").checked = bool; }
   },
   computed: {
     responsive() {

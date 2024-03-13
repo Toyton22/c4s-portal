@@ -1,21 +1,15 @@
-// このページってもしかして読み込まれない？
-
 <template>
-  <TopPage />
-  <nav>
-    <router-link to="/">Home</router-link> |
-    <router-link to="/about">About</router-link>
-  </nav>
-  <router-view/>
+  <MainHeader />
+  <router-view />
 </template>
 
 <script>
-import TopPage from "@/pages/index.vue"
+import MainHeader from "@/components/MainHeader.vue"
 
 export default {
   name: "IndexPage",
   components: {
-    TopPage
+    MainHeader
   }
 }
 </script>
