@@ -13,10 +13,12 @@
         </label>
       </div>
       <div v-else class="w-auto py-3 ms-auto my-auto text-end">
-        <router-link class="text-light hover pointer mx-3 text-decoration-none" v-for="page in pages" :key="page.path" :to="page.path">
-          {{ page.title }}
-        </router-link>
-        <router-link class="text-info hover pointer mx-3 text-decoration-none" v-for="page in pages_admin" :key="page.path" :to="page.path">
+        <router-link
+          class="hover pointer mx-3 text-decoration-none"
+          v-for="page in pages"
+          :key="page.path"
+          :to="page.path"
+          :style="[page.condition == 'adminonly' ? 'color: darkorchid;' : 'color: lightgray']">
           {{ page.title }}
         </router-link>
       </div>
@@ -26,18 +28,15 @@
   <!-- スマホ用メニュー -->
   <div class="menu mw-xl mx-auto">
     <div v-for="page in pages" :key="page.path" class="menu_content">
-      <router-link class="menu_text pointer hover h4 text-decoration-none" :to="page.path" @click="handleMenu(false)">
-        {{ page.title }}
-      </router-link>
-    </div>
-    <div v-for="page in pages_admin" :key="page.path" class="menu_content">
-      <router-link class="menu_text pointer hover h4 text-decoration-none" :to="page.path" @click="handleMenu(false)">
+      <router-link
+        class="menu_text pointer hover h4 text-decoration-none"
+        :to="page.path"
+        @click="handleMenu(false)"
+        :style="[page.condition == 'adminonly' ? 'color: darkorchid;' : 'color: lightgray']">
         {{ page.title }}
       </router-link>
     </div>
   </div>
-
-  <h2 class="mt-5">{{ pagename }}</h2>
 </template>
 
 <script>
@@ -50,9 +49,7 @@ export default {
         title: "トップ",
         path: "/",
         condition: "public"
-      }
-    ],
-    pages_admin: [
+      },
       {
         title: "イベント",
         path: "/events",
@@ -61,7 +58,7 @@ export default {
       {
         title: "記事",
         path: "/members",
-        condition: "public"
+        condition: "adminonly"
       },
       {
         title: "備品一覧",
@@ -73,26 +70,26 @@ export default {
         path: "/mypage",
         condition: "public"
       }
-    ]
+    ],
+    pagename: ""
   }},
   created() {
     
   },
   methods: {
     go(path) { location.href = path },
-    handleMenu(bool) { document.getElementById("menuBtn").checked = bool; }
+    handleMenu(bool) { document.getElementById("menuBtn").checked = bool; },
+    getPagename() {
+      this.pages.forEach(page => {
+        if (location.pathname == page.path) this.pagename = page.title
+      })
+      return this.pagename
+    },
+    getPathname() { return location.pathname }
   },
   computed: {
     responsive() {
       return (window.innerWidth < 750)
-    },
-    pagename() {
-      if(location.pathname == "/") return ""
-      let pagename = ""
-      this.pages.forEach(page => {
-        if (location.pathname == page.path) pagename = page.title
-      })
-      return pagename
     }
   }
 }
@@ -127,6 +124,5 @@ export default {
 }
 .menu_text {
   font-weight: bold;
-  color: whitesmoke;
 }
 </style>

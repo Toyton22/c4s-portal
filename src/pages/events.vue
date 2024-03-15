@@ -1,13 +1,228 @@
 <template>
-  <h1>Hello, EventPage.vue!</h1>
+  <h1 class="mt-5 text-center">{{ pagename }}</h1>
+  <div class="mw-xl mx-auto p-3">
+    <!-- placeholder -->
+    <div v-if="!ready" class="row">
+      <div v-for="n in 5" :key="n" class="col-lg-6 p-2">
+        <div class="bg-white rounded-3 p-4 shadow-sm h-100" :class="`work_card`">
+          <h5><span class="badge bg-secondary"></span></h5>
+          <h5 class="mb-0 placeholder w-100"></h5>
+          <p class="mb-0 small text-secondary placeholder w-75"></p>
+          <hr class="my-1">
+          <p class="placeholder w-100 mb-1"></p>
+          <p class="placeholder w-100 mb-1"></p>
+          <p class="placeholder w-75"></p>
+        </div>
+      </div>
+    </div>
+    <!-- cards -->
+    <div v-else class="row">
+      <div class="col-lg-6 p-2" v-if="admin">
+        <div class="rounded-3 p-4 shadow-sm hover pointer h-100 add_card d-flex justify-content-center align-items-center">
+          <h5 class="mb-0 text-secondary text-center"><i class="bi bi-plus-square-dotted"> </i> 新規登録</h5>
+        </div>
+      </div>
+      <div v-for="(event, id) in Events" :key="id" class="col-lg-6 p-2">
+        <div class="bg-white rounded-3 p-4 shadow-sm pointer h-100 position-relative" :class="`${event.type ? event.type : 'assembly'}_card`">
+          <h5>
+            <span class="badge bg-danger" v-if="!event.type || event.type == 'assembly'">部会</span> 
+            <span class="badge bg-success" v-else-if="event.type == 'course'">講座</span> 
+            <span class="badge bg-secondary" v-else-if="event.type == 'work'">制作会</span> 
+            <span class="badge bg-indigo" v-else-if="event.type == 'event'">イベント</span> 
+            <span class="badge bg-indigo" v-else-if="event.type == 'recreation'">レク</span> 
+            <span class="badge bg-secondary" v-else>その他</span> 
+          </h5>
+          <h5 class="mb-0">
+            {{ event.title }}
+          </h5>
+          <p class="mb-0 small text-secondary">{{ getTermText(event.term) }} ・ {{ event.place }}</p>
+          <hr class="my-1">
+          <p>{{ event.description }}</p>
+          <div class="mt-2 d-flex">
+            <div class="balloon1-right">
+              <p>アンケート</p>
+            </div>
+            <div class="Qbtn attend hover pointer">
+              <i class="bi bi-check-lg"></i> 参加
+            </div>
+            <div class="Qbtn absent hover pointer">
+              <i class="bi bi-x"></i> 欠席
+            </div>
+          </div>
+          <div class="position-absolute top-0 end-0 p-4">
+            <h5 class="bi bi-person-check-fill text-secondary"></h5>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
+import { initializeApp } from "firebase/app";
+import { getDatabase, onValue, ref } from "firebase/database";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBE60G8yImWlENWpCnQZzqqVUrwWa_torg",
+  authDomain: "c4s-portal.firebaseapp.com",
+  databaseURL: "https://c4s-portal-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "c4s-portal",
+  storageBucket: "c4s-portal.appspot.com",
+  messagingSenderId: "863775995414",
+  appId: "1:863775995414:web:82eb9557a13a099dfbe737",
+  measurementId: "G-K2SR1WSNRC"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
 export default {
-  name: "EventPage"
+  name: "EventPage",
+  data() {
+    return {
+      pagename: "イベント情報",
+      ready: false,
+      admin: true,
+      Events: {},
+      endEvents: {},
+      heldEvents: {}
+    }
+  },
+  created() {
+    onValue(ref(db, "event"), snapshot => {
+      this.Events = {}
+      this.heldEvents = {}
+      this.endEvents = {}
+
+      // イベントを終了・開催中・予定に振り分け
+      // ちゃんと日付順に並び替えてから
+      let data = snapshot.val()
+      const sortedKeys = Object.keys(data).sort((a, b) => new Date(data[a].term.begin) - new Date(data[b].term.begin))
+      sortedKeys.forEach(id => {
+        if(new Date() < new Date(data[id].term.begin)) this.Events[id] = data[id]
+        else if(new Date() < new Date(data[id].term.end)) this.heldEvents[id] = data[id]
+        else this.endEvents[id] = data[id]
+      })
+
+      this.ready = true
+    })
+  },
+  methods: {
+    getTermText(term) {
+      const ALLDAY = term.allday
+      const BEGIN = new Date(term.begin)
+      const END = new Date(term.end)
+      const TODAY = new Date()
+
+      const LIST = (input) => { 
+        let date = new Date(input)
+        return [ date.getFullYear(), date.getMonth()+1, date.getDate(), date.getHours(), date.getMinutes() ]
+      }
+      const Shift = (date, int) => { return date.setDate(date.getDate()+int) }
+      const addZero = (str) => { return String(str)[1] ? str : '0'+str }
+      const compareDate = (one, another) => {
+        return (LIST(one)[0] == LIST(another)[0] && LIST(one)[1] == LIST(another)[1] && LIST(one)[2] == LIST(another)[2])
+      }
+
+      let MSG = ''
+      if (compareDate(TODAY, BEGIN)) { MSG = '（きょう）' }
+      if (compareDate(Shift(TODAY, 1), BEGIN)) { MSG = '（きのう）' }
+      if (compareDate(Shift(TODAY, 2), BEGIN)) { MSG = '（あさって）' }
+
+      // 開始日時
+      let beginString = ''
+      if (LIST(BEGIN)[0] != LIST(TODAY)[0]) beginString += `${LIST(BEGIN)[0]}年`
+      beginString += `${LIST(BEGIN)[1]}月${LIST(BEGIN)[2]}日`
+      if (!ALLDAY) beginString += ` ${LIST(BEGIN)[3]}:${addZero(LIST(BEGIN)[4])}`
+      // 終了日時
+      let endString = ''
+      if (compareDate(BEGIN, END)) { if (!ALLDAY) { endString = ` - ${LIST(END)[3]}:${addZero(LIST(END)[4])}` } }
+      else {
+        endString = ` - `
+        if (LIST(BEGIN)[0] != LIST(END)[0]) endString += `${LIST(END)[0]}年`
+        endString += `${LIST(END)[1]}月${LIST(END)[2]}日`
+        if (!ALLDAY) beginString += ` ${LIST(END)[3]}:${addZero(LIST(END)[4])}`
+      }
+
+      return `${beginString}${MSG}${endString}`
+    },
+    sortEvents(data, keys) {
+      if (!keys) return null
+      let first = keys[0]
+      keys.forEach(key => {
+        if (new Date(data[key].term.begin) < new Date(data[first].term.begin)) first = key
+      })
+      keys.splice()
+      return [first, ...this.sortEvents()]
+    }
+  }
 }
 </script>
 
 <style>
-
+.badge {
+  width: 5em;
+}
+.assembly_card {
+  border-left: crimson solid 10px;
+}
+.course_card {
+  border-left: green solid 10px;
+}
+.work_card {
+  border-left: dimgray solid 10px;
+}
+.bg-indigo {
+  background-color: purple;
+}
+.event_card {
+  border-left: purple solid 10px;
+}
+.recreation_card {
+  border-left: purple solid 10px;
+}
+.add_card {
+  border: darkgray dashed 3px;
+}
+.balloon1-right {
+  position: relative;
+  display: inline-block;
+  margin-right: 10px;
+  padding: 7px 10px;
+  max-width: 100%;
+  color: #555;
+  font-size: 16px;
+  background: rgb(225, 225, 225);
+  border-radius: 4px;
+}
+.balloon1-right:before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  margin-top: -10px;
+  border: 10px solid transparent;
+  border-left: 15px solid rgb(225, 225, 225);
+}
+.balloon1-right p {
+  margin: 0;
+  padding: 0;
+}
+.Qbtn {
+  margin-left: 15px;
+  padding: 7px 10px;
+  text-align: center;
+  border-bottom: gray dashed 2px;
+  transition: 0.5s;
+}
+.attend {
+  font-weight: bolder;
+  color: green;
+  border-bottom: green dashed 5px;
+}
+.absent {
+  font-weight: bolder;
+  color: darkred;
+  border-bottom: darkred dashed 5px;
+}
 </style>
