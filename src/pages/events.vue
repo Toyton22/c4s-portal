@@ -1,9 +1,10 @@
 <template>
   <h1 class="mt-5 text-center">{{ pagename }}</h1>
+
   <div class="mw-xl mx-auto p-3">
     <!-- placeholder -->
     <div v-if="!ready" class="row">
-      <div v-for="n in 5" :key="n" class="col-lg-6 p-2">
+      <div v-for="n in 8" :key="n" class="col-lg-6 p-2">
         <div class="bg-white rounded-3 p-4 shadow-sm h-100" :class="`work_card`">
           <h5><span class="badge bg-secondary"></span></h5>
           <h5 class="mb-0 placeholder w-100"></h5>
@@ -23,7 +24,12 @@
         </div>
       </div>
       <div v-for="(event, id) in Events" :key="id" class="col-lg-6 p-2">
-        <div class="bg-white rounded-3 p-4 shadow-sm pointer h-100 position-relative" :class="`${event.type ? event.type : 'assembly'}_card`">
+        <!-- display -->
+        <div
+          class="bg-white rounded-3 p-4 shadow-sm h-100 position-relative d-flex flex-column"
+          :class="[`${event.type ? event.type : 'assembly'}_card`, admin ? 'pointer' : '']"
+          @click="admin ? editting = id : null"
+          v-if="editting != id">
           <h5>
             <span class="badge bg-danger" v-if="!event.type || event.type == 'assembly'">部会</span> 
             <span class="badge bg-success" v-else-if="event.type == 'course'">講座</span> 
@@ -38,19 +44,83 @@
           <p class="mb-0 small text-secondary">{{ getTermText(event.term) }} ・ {{ event.place }}</p>
           <hr class="my-1">
           <p>{{ event.description }}</p>
-          <div class="mt-2 d-flex">
+          <div class="mt-2 d-flex mt-auto" v-if="user">
             <div class="balloon1-right">
               <p>アンケート</p>
             </div>
-            <div class="Qbtn attend hover pointer">
-              <i class="bi bi-check-lg"></i> 参加
+            <div
+              class="Qbtn hover pointer"
+              :class="event.notice[user.uid] == 1 ? 'attend' : 'text-secondary'"
+              @click="notice(id, true)">
+              <i class="bi bi-check-lg"></i> 参加 {{ Object.keys(event.notice).filter(n => event.notice[n] == 1).length }}
             </div>
-            <div class="Qbtn absent hover pointer">
+            <div
+              class="Qbtn hover pointer"
+              :class="event.notice[user.uid] == -1 ? 'absent' : 'text-secondary'"
+              @click="notice(id, false)">
               <i class="bi bi-x"></i> 欠席
             </div>
           </div>
-          <div class="position-absolute top-0 end-0 p-4">
+          <div class="position-absolute top-0 end-0 p-4" v-if="event.code">
             <h5 class="bi bi-person-check-fill text-secondary"></h5>
+          </div>
+        </div>
+        <!-- editor -->
+        <div
+          class="bg-white rounded-3 p-4 shadow-sm h-100 position-relative d-flex flex-column"
+          :class="`${event.type ? event.type : 'assembly'}_card`"
+          v-if="editting == id">
+          <select class="form-select mb-1" :id="`${id}_TYPE`" :value="event.type">
+            <option value="" selected>イベントタイプを選んでください</option>
+            <option value="assembly">部会</option>
+            <option value="course">講座</option>
+            <option value="work">制作会</option>
+            <option value="event">イベント</option>
+            <option value="recreation">レク</option>
+          </select>
+          <div class="mb-1">
+            <input type="text" class="form-control" :id="`${id}_TITLE`" placeholder="イベント名" :value="event.title">
+          </div>
+          <div class="mb-1">
+          </div>
+          <p class="mb-0 text-end small text-secondary">時刻を空白にすると終日の予定が作れます</p>
+          <div class="mb-1 row">
+            <div class="w-50 pe-1">
+              <input type="date" class="form-control" :id="`${id}_TERM_BEGIN_DATE`" :value="event.term.begin.split(' ')[0]">
+            </div>
+            <div class="w-50 ps-1">
+              <input type="time" class="form-control" :id="`${id}_TERM_BEGIN_TIME`" :value="event.term.begin.split(' ')[1]">
+            </div>
+          </div>
+          <div class="mb-1 row">
+            <div class="w-50 pe-1">
+              <input type="date" class="form-control" :id="`${id}_TERM_END_DATE`" :value="event.term.end.split(' ')[0]">
+            </div>
+            <div class="w-50 ps-1">
+              <input type="time" class="form-control" :id="`${id}_TERM_END_TIME`" :value="event.term.end.split(' ')[1]">
+            </div>
+          </div>
+          <div class="mb-1">
+            <input type="text" class="form-control" :id="`${id}_PLACE`" placeholder="場所" :value="event.place">
+          </div>
+          <div class="mb-1">
+            <textarea class="form-control" :id="`${id}_DESCRIPTION`" rows="3" :value="event.description" />
+          </div>
+          <div class="row">
+            <div class="w-50 pe-1">
+              <div
+                class="rounded-1 border text-center py-2 text-secondary hover pointer"
+                @click="confirm_('閉じてよろしいですか？') ? editting = '' : ''">
+                キャンセル
+              </div>
+            </div>
+            <div class="w-50 ps-1">
+              <div
+                class="rounded-1 bg-secondary text-center py-2 text-light hover pointer"
+                @click="confirm_('保存しますか？') ? save(id) : ''">
+                保存
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -60,7 +130,8 @@
 
 <script>
 import { initializeApp } from "firebase/app";
-import { getDatabase, onValue, ref } from "firebase/database";
+import { getDatabase, onValue, ref, get, set, update } from "firebase/database";
+import { onAuthStateChanged, getAuth } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBE60G8yImWlENWpCnQZzqqVUrwWa_torg",
@@ -73,8 +144,9 @@ const firebaseConfig = {
   measurementId: "G-K2SR1WSNRC"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+const app = initializeApp(firebaseConfig)
+const auth = getAuth()
+const db = getDatabase(app)
 
 export default {
   name: "EventPage",
@@ -82,13 +154,27 @@ export default {
     return {
       pagename: "イベント情報",
       ready: false,
+      user: {},
+      c4suser: {},
       admin: true,
       Events: {},
       endEvents: {},
-      heldEvents: {}
+      heldEvents: {},
+      editting: '',
+      aditting_allday: false
     }
   },
   created() {
+    onAuthStateChanged(auth, snapshot => {
+      this.user = snapshot
+      if (this.user) {
+        get(ref(db, `users/${this.user.uid}`)).then(snapshot => this.c4suser = snapshot.val() )
+        get(ref(db, `admin-users/${this.user.uid}`)).then(snapshot => this.admin = snapshot ? true : false )
+      } else {
+        this.c4suser = null
+        this.admin = false
+      }
+    })
     onValue(ref(db, "event"), snapshot => {
       this.Events = {}
       this.heldEvents = {}
@@ -146,14 +232,26 @@ export default {
 
       return `${beginString}${MSG}${endString}`
     },
-    sortEvents(data, keys) {
-      if (!keys) return null
-      let first = keys[0]
-      keys.forEach(key => {
-        if (new Date(data[key].term.begin) < new Date(data[first].term.begin)) first = key
+    notice(id, bool) {
+      set(ref(db, `event/${id}/notice/${this.user.uid}`), bool ? 1 : -1 )
+    },
+    confirm_(str) { return confirm(str) },
+    save (id) {
+      const value = (id) => { return document.getElementById(id).value }
+      // まずは不備チェック
+      if (!value(`${id}_TITLE`)) { alert('イベント名が入力されていません'); return }
+      if (!value(`${id}_TERM_BEGIN_DATE`) || !value(`${id}_TERM_END_DATE`)) { alert('日付を入力してください'); return }
+      if (!value(`${id}_PLACE`)) { alert('開催場所の入力は必須です'); return }
+      // アップロード
+      update(ref(db, `event/${id}`), {
+        type: value(`${id}_TYPE`),
+        title: value(`${id}_TITLE`),
+        term: {
+          begin: `${value(`${id}_TERM_BEGIN_DATE`)} ${value(`${id}_TERM_BEGIN_TIME`)}`,
+          end: `${value(`${id}_TERM_END_DATE`)} ${value(`${id}_TERM_END_TIME`)}`,
+        },
+        description: value(`${id}_DESCRIPTION`)
       })
-      keys.splice()
-      return [first, ...this.sortEvents()]
     }
   }
 }
@@ -188,7 +286,7 @@ export default {
   position: relative;
   display: inline-block;
   margin-right: 10px;
-  padding: 7px 10px;
+  padding: 4px 10px;
   max-width: 100%;
   color: #555;
   font-size: 16px;
@@ -209,11 +307,10 @@ export default {
   padding: 0;
 }
 .Qbtn {
-  margin-left: 15px;
-  padding: 7px 10px;
+  margin-left: 20px;
+  padding: 4px 2px;
   text-align: center;
   border-bottom: gray dashed 2px;
-  transition: 0.5s;
 }
 .attend {
   font-weight: bolder;

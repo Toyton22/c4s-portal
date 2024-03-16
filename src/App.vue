@@ -10,6 +10,9 @@ export default {
   name: "IndexPage",
   components: {
     MainHeader
+  },
+  data() {
+    return { hoge: "something" }
   }
 }
 </script>
