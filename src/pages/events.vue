@@ -18,24 +18,90 @@
     </div>
     <!-- cards -->
     <div v-else class="row">
+      <!-- addnew -->
       <div class="col-lg-6 p-2" v-if="admin">
-        <div class="rounded-3 p-4 shadow-sm hover pointer h-100 add_card d-flex justify-content-center align-items-center">
+        <!-- editor -->
+        <div
+          class="bg-white rounded-3 p-4 shadow-sm h-100 position-relative d-flex flex-column add_card"
+          v-if="editting == '__NEW'">
+          <select class="form-select mb-1" id="__NEW_TYPE">
+            <option value="" selected>イベントタイプを選んでください</option>
+            <option value="assembly">部会</option>
+            <option value="course">講座</option>
+            <option value="work">制作会</option>
+            <option value="event">イベント</option>
+            <option value="recreation">レク</option>
+          </select>
+          <div class="mb-1">
+            <input type="text" class="form-control" id="__NEW_TITLE" placeholder="イベント名" value="">
+          </div>
+          <p class="mb-0 text-end small text-secondary">時刻を空白にすると終日の予定が作れます</p>
+          <div class="mb-1 row">
+            <div class="w-50 pe-1">
+              <input type="date" class="form-control" id="__NEW_TERM_BEGIN_DATE" value="">
+            </div>
+            <div class="w-50 ps-1">
+              <input type="time" class="form-control" id="__NEW_TERM_BEGIN_TIME" value="18:15">
+            </div>
+          </div>
+          <div class="mb-1 row">
+            <div class="w-50 pe-1">
+              <input type="date" class="form-control" id="__NEW_TERM_END_DATE" value="">
+            </div>
+            <div class="w-50 ps-1">
+              <input type="time" class="form-control" id="__NEW_TERM_END_TIME" value="20:00">
+            </div>
+          </div>
+          <div class="mb-1">
+            <input type="text" class="form-control" id="__NEW_PLACE" placeholder="場所" value="">
+          </div>
+          <div class="mb-1 row">
+            <div class="w-50 pe-1">
+              <input type="text" class="form-control" id="__NEW_CODE" placeholder="出席コード" value="">
+            </div>
+            <div class="w-50 ps-1 input-group">
+              <input type="number" class="form-control" id="__NEW_POINT" placeholder="ポイント" value="">
+              <span class="input-group-text">Pts.</span>
+            </div>
+          </div>
+          <div class="mb-1">
+            <textarea class="form-control" id="__NEW_DESCRIPTION" rows="3" value="" placeholder="概要"/>
+          </div>
+          <div class="row">
+            <div class="w-50 pe-1">
+              <div
+                class="rounded-1 border text-center py-2 text-secondary hover pointer"
+                @click="confirm_('閉じてよろしいですか？') ? editting = '' : ''">
+                キャンセル
+              </div>
+            </div>
+            <div class="w-50 ps-1">
+              <div
+                class="rounded-1 bg-secondary text-center py-2 text-light hover pointer"
+                @click="confirm_('保存しますか？') ? upload() : ''">
+                保存
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- btn -->
+        <div v-else @click="editting = '__NEW'" class="rounded-3 p-4 shadow-sm hover pointer h-100 add_card d-flex justify-content-center align-items-center">
           <h5 class="mb-0 text-secondary text-center"><i class="bi bi-plus-square-dotted"> </i> 新規登録</h5>
         </div>
       </div>
+      <!-- list -->
       <div v-for="(event, id) in Events" :key="id" class="col-lg-6 p-2">
         <!-- display -->
         <div
           class="bg-white rounded-3 p-4 shadow-sm h-100 position-relative d-flex flex-column"
-          :class="[`${event.type ? event.type : 'assembly'}_card`, admin ? 'pointer' : '']"
-          @click="admin ? editting = id : null"
+          :class="`${event.type ? event.type : 'assembly'}_card`"
           v-if="editting != id">
           <h5>
             <span class="badge bg-danger" v-if="!event.type || event.type == 'assembly'">部会</span> 
             <span class="badge bg-success" v-else-if="event.type == 'course'">講座</span> 
             <span class="badge bg-secondary" v-else-if="event.type == 'work'">制作会</span> 
             <span class="badge bg-indigo" v-else-if="event.type == 'event'">イベント</span> 
-            <span class="badge bg-indigo" v-else-if="event.type == 'recreation'">レク</span> 
+            <span class="badge bg-darkorange" v-else-if="event.type == 'recreation'">レク</span> 
             <span class="badge bg-secondary" v-else>その他</span> 
           </h5>
           <h5 class="mb-0">
@@ -50,19 +116,23 @@
             </div>
             <div
               class="Qbtn hover pointer"
-              :class="event.notice[user.uid] == 1 ? 'attend' : 'text-secondary'"
+              :class="(event.notice && event.notice[user.uid] == 1) ? 'attend' : 'text-secondary'"
               @click="notice(id, true)">
-              <i class="bi bi-check-lg"></i> 参加 {{ Object.keys(event.notice).filter(n => event.notice[n] == 1).length }}
+              <i class="bi bi-check-lg"></i> 参加 <span v-if="event.notice">{{ Object.keys(event.notice).filter(n => event.notice[n] == 1).length }}</span>
             </div>
             <div
               class="Qbtn hover pointer"
-              :class="event.notice[user.uid] == -1 ? 'absent' : 'text-secondary'"
+              :class="event.notice && event.notice[user.uid] == -1 ? 'absent' : 'text-secondary'"
               @click="notice(id, false)">
               <i class="bi bi-x"></i> 欠席
             </div>
           </div>
-          <div class="position-absolute top-0 end-0 p-4" v-if="event.code">
-            <h5 class="bi bi-person-check-fill text-secondary"></h5>
+          <div class="position-absolute top-0 end-0 p-4">
+            <h5 class="text-secondary">
+              <span class="ms-4 bi bi-person-check" v-if="event.code"></span>
+              <span class="ms-4 bi bi-pencil-square pointer" v-if="admin" @click="editting = id"></span>
+              <span class="ms-4 bi bi-calendar-x pointer" v-if="admin" @click="del(id)"></span>
+            </h5>
           </div>
         </div>
         <!-- editor -->
@@ -80,8 +150,6 @@
           </select>
           <div class="mb-1">
             <input type="text" class="form-control" :id="`${id}_TITLE`" placeholder="イベント名" :value="event.title">
-          </div>
-          <div class="mb-1">
           </div>
           <p class="mb-0 text-end small text-secondary">時刻を空白にすると終日の予定が作れます</p>
           <div class="mb-1 row">
@@ -103,8 +171,17 @@
           <div class="mb-1">
             <input type="text" class="form-control" :id="`${id}_PLACE`" placeholder="場所" :value="event.place">
           </div>
+          <div class="mb-1 row">
+            <div class="w-50 pe-1">
+              <input type="text" class="form-control" :id="`${id}_CODE`" placeholder="出席コード" :value="event.code">
+            </div>
+            <div class="w-50 ps-1 input-group">
+              <input type="number" class="form-control" :id="`${id}_POINT`" placeholder="ポイント" :value="event.point">
+              <span class="input-group-text">Pts.</span>
+            </div>
+          </div>
           <div class="mb-1">
-            <textarea class="form-control" :id="`${id}_DESCRIPTION`" rows="3" :value="event.description" />
+            <textarea class="form-control" :id="`${id}_DESCRIPTION`" rows="3" :value="event.description" placeholder="概要" />
           </div>
           <div class="row">
             <div class="w-50 pe-1">
@@ -117,7 +194,7 @@
             <div class="w-50 ps-1">
               <div
                 class="rounded-1 bg-secondary text-center py-2 text-light hover pointer"
-                @click="confirm_('保存しますか？') ? save(id) : ''">
+                @click="save(id)">
                 保存
               </div>
             </div>
@@ -130,7 +207,7 @@
 
 <script>
 import { initializeApp } from "firebase/app";
-import { getDatabase, onValue, ref, get, set, update } from "firebase/database";
+import { getDatabase, onValue, ref, get, set, update, remove } from "firebase/database";
 import { onAuthStateChanged, getAuth } from 'firebase/auth';
 
 const firebaseConfig = {
@@ -236,6 +313,29 @@ export default {
       set(ref(db, `event/${id}/notice/${this.user.uid}`), bool ? 1 : -1 )
     },
     confirm_(str) { return confirm(str) },
+    upload () {
+      const value = (id) => { return document.getElementById(id).value }
+      // まずは不備チェック
+      if (!value(`__NEW_TITLE`)) { alert('イベント名が入力されていません'); return }
+      if (!value(`__NEW_TERM_BEGIN_DATE`) || !value(`__NEW_TERM_END_DATE`)) { alert('日付を入力してください'); return }
+      if (!value(`__NEW_PLACE`)) { alert('開催場所の入力は必須です'); return }
+      // アップロード
+      set(ref(db, `event/${new Date().getTime().toString(16).toUpperCase()}`), {
+        type: value(`__NEW_TYPE`),
+        title: value(`__NEW_TITLE`),
+        term: {
+          begin: `${value(`__NEW_TERM_BEGIN_DATE`)} ${value(`__NEW_TERM_BEGIN_TIME`)}`,
+          end: `${value(`__NEW_TERM_END_DATE`)} ${value(`__NEW_TERM_END_TIME`)}`,
+        },
+        place: value(`__NEW_PLACE`),
+        code: value(`__NEW_CODE`),
+        point: value(`__NEW_POINT`),
+        description: value(`__NEW_DESCRIPTION`),
+        tags: ["新ポータルから登録"],
+        notice: "",
+        attenders: ""
+      }).then(() => { this.editting = '' })
+    },
     save (id) {
       const value = (id) => { return document.getElementById(id).value }
       // まずは不備チェック
@@ -250,8 +350,15 @@ export default {
           begin: `${value(`${id}_TERM_BEGIN_DATE`)} ${value(`${id}_TERM_BEGIN_TIME`)}`,
           end: `${value(`${id}_TERM_END_DATE`)} ${value(`${id}_TERM_END_TIME`)}`,
         },
+        place: value(`${id}_PLACE`),
+        code: value(`${id}_CODE`),
+        point: value(`${id}_POINT`),
         description: value(`${id}_DESCRIPTION`)
-      })
+      }).then(() => { this.editting = '' })
+    },
+    del (id) {
+      if (confirm(`「${this.Events[id].title}」を削除してよろしいですか？`) && confirm(`二度と元には戻せません。ほんとうに削除してよろしいですか？`))
+      remove(ref(db, `event/${id}`))
     }
   }
 }
@@ -276,8 +383,11 @@ export default {
 .event_card {
   border-left: purple solid 10px;
 }
+.bg-darkorange {
+  background-color: darkorange;
+}
 .recreation_card {
-  border-left: purple solid 10px;
+  border-left: darkorange solid 10px;
 }
 .add_card {
   border: darkgray dashed 3px;

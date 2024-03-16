@@ -22,5 +22,5 @@ pnpm-debug.log*
 *.sln
 *.sw?
 
-# Launch Files
-launch.bat
+# MEMO Files
+memo.txt
