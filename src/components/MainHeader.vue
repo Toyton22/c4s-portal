@@ -18,7 +18,15 @@
           v-for="page in pages"
           :key="page.path"
           :to="page.path"
-          :style="[page.condition == 'adminonly' ? 'color: darkorchid;' : 'color: lightgray']">
+          style="color: lightgray">
+          {{ page.title }}
+        </router-link>
+        <router-link
+          class="hover pointer mx-3 text-decoration-none"
+          v-for="page in pages_adminonly"
+          :key="page.path"
+          :to="page.path"
+          style="color: darkorchid">
           {{ page.title }}
         </router-link>
       </div>
@@ -32,7 +40,16 @@
         class="menu_text pointer hover h4 text-decoration-none"
         :to="page.path"
         @click="handleMenu(false)"
-        :style="[page.condition == 'adminonly' ? 'color: darkorchid;' : 'color: lightgray']">
+        style="color: lightgray">
+        {{ page.title }}
+      </router-link>
+    </div>
+    <div v-for="page in pages_adminonly" :key="page.path" class="menu_content">
+      <router-link
+        class="menu_text pointer hover h4 text-decoration-none"
+        :to="page.path"
+        @click="handleMenu(false)"
+        style="color: darkorchid">
         {{ page.title }}
       </router-link>
     </div>
@@ -40,41 +57,69 @@
 </template>
 
 <script>
+import { initializeApp } from "firebase/app";
+import { getDatabase, ref, get } from "firebase/database";
+import { onAuthStateChanged, getAuth } from 'firebase/auth';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBE60G8yImWlENWpCnQZzqqVUrwWa_torg",
+  authDomain: "c4s-portal.firebaseapp.com",
+  databaseURL: "https://c4s-portal-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "c4s-portal",
+  storageBucket: "c4s-portal.appspot.com",
+  messagingSenderId: "863775995414",
+  appId: "1:863775995414:web:82eb9557a13a099dfbe737",
+  measurementId: "G-K2SR1WSNRC"
+};
+
+const app = initializeApp(firebaseConfig)
+const auth = getAuth()
+const db = getDatabase(app)
+
 export default {
   name: "MainHeader",
   data() { return {
     // main.jsとは異なり公開しているページのみ表示
     pages: [
       {
-        title: "トップ",
-        path: "/",
-        condition: "public"
-      },
-      {
         title: "イベント",
-        path: "/events",
-        condition: "public"
-      },
-      {
-        title: "記事",
-        path: "/members",
-        condition: "adminonly"
-      },
-      {
-        title: "備品一覧",
-        path: "/equips",
-        condition: "public"
+        path: "/events"
       },
       {
         title: "マイページ",
-        path: "/mypage",
-        condition: "public"
+        path: "/mypage"
       }
     ],
-    pagename: ""
+    pages_adminonly: [],
+    pagename: "",
+    admin: false
   }},
   created() {
-    
+    onAuthStateChanged(auth, snapshot => {
+      const user = snapshot
+      if (user) {
+        get(ref(db, `admin-users/${user.uid}`)).then(snapshot => this.admin = snapshot ? true : false )
+      } else {
+        this.admin = false
+      }
+      if (this.admin) {
+        // 非公開・管理者専用のページは認証してから追加
+        this.pages_adminonly = [
+          {
+            title: "トップ",
+            path: "/"
+          },
+          {
+            title: "備品一覧",
+            path: "/equips"
+          },
+          {
+            title: "記事",
+            path: "/members"
+          }
+        ]
+      }
+    })
   },
   methods: {
     go(path) { location.href = path },
