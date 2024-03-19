@@ -1,7 +1,7 @@
 <template>
   <!-- ヘッダー -->
   <div class="header bg-dark">
-    <div class="mw-xl mx-auto row">
+    <div class="mw-xxl mx-auto row">
       <div class="py-3 hover pointer mw-logo" onclick="location.href=`/`">
         <img src="@/assets/portal2024_logo.svg" class="w-100 mx-3">
       </div>
