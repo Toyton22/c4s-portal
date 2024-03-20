@@ -43,22 +43,22 @@
             <p class="mb-0 text-secondary">{{ getTermText(event.term) }} ・ {{ event.place }}</p>
             <hr class="my-1">
             <p v-html="event.description" />
-            <div class="mt-2 d-flex mt-auto" v-if="user">
+            <div class="mt-2 d-flex mt-auto" v-if="$store.state.user">
               <div
-                v-if="event.code && (!event.attenders || !event.attenders[user.uid])"
+                v-if="event.code && (!event.attenders || !event.attenders[$store.state.user.uid])"
                 class="w-100 rounded-1 bg-c4s-light c4s-dark border py-3 text-center hover pointer">
                 <h4 class="mb-0"><i class="bi bi-person-plus"></i> 出席登録する</h4>
               </div>
               <div
-                v-else-if="event.attenders && event.attenders[user.uid]"
+                v-else-if="event.attenders && event.attenders[$store.state.user.uid]"
                 class="w-100 rounded-1 bg-light text-secondary border py-3 text-center">
                 <h4 class="mb-0"><i class="bi bi-person-check"></i> 出席登録済み</h4>
               </div>
             </div>
             <div class="position-absolute top-0 end-0 p-4">
               <h5 class="text-secondary">
-                <span class="ms-4 bi bi-pencil-square pointer" v-if="admin" @click="editting = id"></span>
-                <span class="ms-4 bi bi-calendar-x pointer" v-if="admin" @click="del(id)"></span>
+                <span class="ms-4 bi bi-pencil-square pointer" v-if="$store.state.status == 'admin'" @click="editting = id"></span>
+                <span class="ms-4 bi bi-calendar-x pointer" v-if="$store.state.status == 'admin'" @click="del(id)"></span>
               </h5>
             </div>
           </div>
@@ -75,7 +75,7 @@
       <!-- future events -->
       <div class="row mb-5">
         <!-- addnew -->
-        <div class="col-md-6 col-xl-4 p-2" v-if="admin">
+        <div class="col-md-6 col-xl-4 p-2" v-if="$store.state.status == 'admin'">
           <!-- editor -->
           <div
             class="bg-white rounded-3 p-4 shadow-sm h-100 position-relative d-flex flex-column add_card"
@@ -108,19 +108,19 @@
             <p class="mb-0 small text-secondary">{{ getTermText(event.term) }} ・ {{ event.place }}</p>
             <hr class="my-1">
             <p v-html="event.description" />
-            <div class="mt-2 d-flex mt-auto" v-if="user">
+            <div class="mt-2 d-flex mt-auto" v-if="$store.state.user">
               <div class="balloon1-right">
                 <p>アンケート</p>
               </div>
               <div
                 class="Qbtn hover pointer"
-                :class="(event.notice && event.notice[user.uid] == 1) ? 'attend' : 'text-secondary'"
+                :class="(event.notice && event.notice[$store.state.user.uid] == 1) ? 'attend' : 'text-secondary'"
                 @click="notice(id, true)">
                 <i class="bi bi-check-lg"></i> 参加 <span v-if="event.notice">{{ Object.keys(event.notice).filter(n => event.notice[n] == 1).length }}</span>
               </div>
               <div
                 class="Qbtn hover pointer"
-                :class="event.notice && event.notice[user.uid] == -1 ? 'absent' : 'text-secondary'"
+                :class="event.notice && event.notice[$store.state.user.uid] == -1 ? 'absent' : 'text-secondary'"
                 @click="notice(id, false)">
                 <i class="bi bi-x"></i> 欠席
               </div>
@@ -128,8 +128,8 @@
             <div class="position-absolute top-0 end-0 p-4">
               <h5 class="text-secondary">
                 <span class="ms-4 bi bi-person-check" v-if="event.code"></span>
-                <span class="ms-4 bi bi-pencil-square pointer" v-if="admin" @click="editting = id"></span>
-                <span class="ms-4 bi bi-calendar-x pointer" v-if="admin" @click="del(id)"></span>
+                <span class="ms-4 bi bi-pencil-square pointer" v-if="$store.state.status == 'admin'" @click="editting = id"></span>
+                <span class="ms-4 bi bi-calendar-x pointer" v-if="$store.state.status == 'admin'" @click="del(id)"></span>
               </h5>
             </div>
           </div>
@@ -174,8 +174,8 @@
             <div class="position-absolute top-0 end-0 p-4">
               <h5 class="text-secondary">
                 <span class="ms-4 bi bi-person-check" v-if="event.code"></span>
-                <span class="ms-4 bi bi-pencil-square pointer" v-if="admin" @click="editting = id"></span>
-                <span class="ms-4 bi bi-calendar-x pointer" v-if="admin" @click="del(id)"></span>
+                <span class="ms-4 bi bi-pencil-square pointer" v-if="$store.state.status == 'admin'" @click="editting = id"></span>
+                <span class="ms-4 bi bi-calendar-x pointer" v-if="$store.state.status == 'admin'" @click="del(id)"></span>
               </h5>
             </div>
           </div>
@@ -194,8 +194,7 @@
 
 <script>
 import { initializeApp } from "firebase/app";
-import { getDatabase, onValue, ref, get, set, update, remove } from "firebase/database";
-import { onAuthStateChanged, getAuth } from 'firebase/auth';
+import { getDatabase, onValue, ref, set, update, remove } from "firebase/database";
 
 import EventEditor from "@/components/EventEditor.vue";
 // import CodeForm from "@/components/CodeForm.vue"
@@ -212,7 +211,6 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig)
-const auth = getAuth()
 const db = getDatabase(app)
 
 export default {
@@ -225,9 +223,6 @@ export default {
     return {
       pagename: "イベント情報",
       ready: false,
-      user: {},
-      c4suser: {},
-      admin: true,
       Events: {},
       endEvents: {},
       heldEvents: {},
@@ -237,16 +232,6 @@ export default {
     }
   },
   created() {
-    onAuthStateChanged(auth, snapshot => {
-      this.user = snapshot
-      if (this.user) {
-        get(ref(db, `users/${this.user.uid}`)).then(snapshot => this.c4suser = snapshot.val() )
-        get(ref(db, `admin-users/${this.user.uid}`)).then(snapshot => this.admin = snapshot ? true : false )
-      } else {
-        this.c4suser = null
-        this.admin = false
-      }
-    })
     onValue(ref(db, "event"), snapshot => {
       this.Events = {}
       this.heldEvents = {}
@@ -293,7 +278,8 @@ export default {
       let beginString = ''
       if (LIST(BEGIN)[0] != LIST(TODAY)[0]) beginString += `${LIST(BEGIN)[0]}年`
       beginString += `${LIST(BEGIN)[1]}月${LIST(BEGIN)[2]}日`
-      if (!ALLDAY) beginString += ` ${LIST(BEGIN)[3]}:${addZero(LIST(BEGIN)[4])}`
+      let beginTimeString = ''
+      if (!ALLDAY) beginTimeString += ` ${LIST(BEGIN)[3]}:${addZero(LIST(BEGIN)[4])}`
       // 終了日時
       let endString = ''
       if (compareDate(BEGIN, END)) { if (!ALLDAY) { endString = ` - ${LIST(END)[3]}:${addZero(LIST(END)[4])}` } }
@@ -301,13 +287,13 @@ export default {
         endString = ` - `
         if (LIST(BEGIN)[0] != LIST(END)[0]) endString += `${LIST(END)[0]}年`
         endString += `${LIST(END)[1]}月${LIST(END)[2]}日`
-        if (!ALLDAY) beginString += ` ${LIST(END)[3]}:${addZero(LIST(END)[4])}`
+        if (!ALLDAY) endString += ` ${LIST(END)[3]}:${addZero(LIST(END)[4])}`
       }
 
-      return `${beginString}${MSG}${endString}`
+      return `${beginString}${MSG}${beginTimeString}${endString}`
     },
     notice(id, bool) {
-      set(ref(db, `event/${id}/notice/${this.user.uid}`), bool ? 1 : -1 )
+      set(ref(db, `event/${id}/notice/${this.$store.state.user.uid}`), bool ? 1 : -1 )
     },
     upload (data, id) {
       // アップロード

@@ -1,14 +1,17 @@
 <template>
-  <h1 class="mt-5 text-center">{{ pagename }}</h1>
+  <h1 class="my-5 text-center">{{ pagename }}</h1>
 
-  <div @click="login" class="w-100 py-3">ログイン</div>
-  <div @click="logout" class="w-100 py-3">ログアウト</div>
-
-  {{ hoge }}
+  <div v-if="this.$store.state.status == 'logout'">
+    <p class="text-center">部員登録・各種サービスのご利用にはログインが必要です</p>
+    <div class="w-100 mw-sm mx-auto rounded-3 border bg-white p-3 text-center h4 hover pointer" @click="login">
+      <i class="bi bi-google"></i> ログイン
+    </div>
+  </div>
 </template>
 
 <script>
 import { GoogleAuthProvider, getAuth, signInWithPopup, signOut } from "firebase/auth";
+
 const auth = getAuth();
 const provider = new GoogleAuthProvider();
 
@@ -16,8 +19,12 @@ export default {
   name: "MyPage",
   data() {
     return {
-      pagename: "マイページ"
+      pagename: "マイページ",
+      status: 'logout'
     }
+  },
+  created() {
+    
   },
   methods: {
     login () {
