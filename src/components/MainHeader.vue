@@ -20,7 +20,7 @@
             v-if="page.state != 'adminonly' || $store.state.status == 'admin'"
             class="hover pointer mx-3 text-decoration-none"
             :to="page.path"
-            :style="`color: ${page.state == 'adminonly' ? '#d1a3ff' : 'lightgray'}`">
+            :style="`color: ${page.state == 'adminonly' ? color.admin : color.public}`">
             {{ page.title }}
           </router-link>
         </div>
@@ -36,7 +36,7 @@
           class="menu_text pointer hover h4 text-decoration-none"
           :to="page.path"
           @click="handleMenu(false)"
-          :style="`color: ${page.state == 'adminonly' ? '#d1a3ff' : 'lightgray'}`">
+          :style="`color: ${page.state == 'adminonly' ? color.admin : color.public}`">
           {{ page.title }}
         </router-link>
       </div>
@@ -56,6 +56,11 @@ export default {
         state: "adminonly"
       },
       {
+        title: "掲示板",
+        path: "/members",
+        state: "adminonly"
+      },
+      {
         title: "イベント",
         path: "/events",
         state: "public"
@@ -66,17 +71,20 @@ export default {
         state: "adminonly"
       },
       {
-        title: "記事",
-        path: "/members",
-        state: "adminonly"
-      },
-      {
         title: "マイページ",
         path: "/mypage",
         state: "public"
+      },
+      {
+        title: "管理画面",
+        path: "/admin",
+        state: "adminonly"
       }
     ],
-    pages_adminonly: [],
+    color: {
+      public: 'white',
+      admin: 'gray'
+    },
     pagename: "",
     admin: false
   }},
@@ -96,7 +104,7 @@ export default {
   },
   computed: {
     responsive() {
-      return (window.innerWidth < 750)
+      return (window.innerWidth < 800)
     }
   }
 }
