@@ -99,6 +99,19 @@ export default {
       if (!value(`${this.id}_TITLE`)) { alert('イベント名が入力されていません'); return }
       if (!value(`${this.id}_TERM_BEGIN_DATE`) || !value(`${this.id}_TERM_END_DATE`)) { alert('日付を入力してください'); return }
       if (!value(`${this.id}_PLACE`)) { alert('開催場所の入力は必須です'); return }
+
+      // 手動更新できないデータを受け継ぐ
+      let tags, notice, attenders
+      if (this.id == '__NEW') {
+        tags = ['Portal2024から登録']
+        notice = ""
+        attenders = ""
+      } else {
+        tags = this.data.tags
+        notice = this.data.notice
+        attenders = this.data.attenders
+      }
+
       // データを親コンポーネントに送信
       const sendData = {
         type: value(`${this.id}_TYPE`),
@@ -108,12 +121,12 @@ export default {
           end: `${value(`${this.id}_TERM_END_DATE`)} ${value(`${this.id}_TERM_END_TIME`)}`,
         },
         place: value(`${this.id}_PLACE`),
-        tags: ["Portal2024から登録"],
+        tags: tags,
         code: value(`${this.id}_CODE`),
         point: value(`${this.id}_POINT`),
         description: value(`${this.id}_DESCRIPTION`),
-        notice: "",
-        attenders: ""
+        notice: notice,
+        attenders: attenders
       }
       this.$emit('save', sendData, this.sendID)
     },
